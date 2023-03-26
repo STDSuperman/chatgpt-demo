@@ -27,13 +27,13 @@ export const post: APIRoute = async(context) => {
       },
     }), { status: 401 })
   }
-  if (import.meta.env.PROD && !await verifySignature({ t: time, m: messages?.[messages.length - 1]?.content || '' }, sign)) {
-    return new Response(JSON.stringify({
-      error: {
-        message: 'Invalid signature.',
-      },
-    }), { status: 401 })
-  }
+//   if (import.meta.env.PROD && !await verifySignature({ t: time, m: messages?.[messages.length - 1]?.content || '' }, sign)) {
+//     return new Response(JSON.stringify({
+//       error: {
+//         message: 'Invalid signature.',
+//       },
+//     }), { status: 401 })
+//   }
   const initOptions = generatePayload(apiKey, messages)
   // #vercel-disable-blocks
   if (httpsProxy)

@@ -143,7 +143,7 @@ export default () => {
       const latestMessages = [
         ...messageList()
       ];
-      if (_match) {
+      if (_match?.[0]) {
         const json = JSON.parse(_match[0]);
         if (
           "model" in json &&
