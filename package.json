@@ -4,12 +4,14 @@
   "packageManager": "pnpm@7.28.0",
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
+    "start": "astro dev --host 0.0.0.0",
     "build": "astro build",
     "build:vercel": "OUTPUT=vercel astro build",
     "build:netlify": "OUTPUT=netlify astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "pm2:stop": "pm2 stop ChatGPT && pm2 delete ChatGPT",
+    "pm2:start": "pm2 start ./ecosystem.config.cjs --name=ChatGPT",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.astro",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx,.astro --fix"
   },
@@ -39,6 +41,7 @@
     "@unocss/preset-attributify": "^0.50.1",
     "@unocss/preset-icons": "^0.50.4",
     "@unocss/preset-typography": "^0.50.3",
+    "global-tunnel-ng": "^2.7.1",
     "eslint-plugin-astro": "^0.24.0",
     "punycode": "^2.3.0",
     "unocss": "^0.50.1",
