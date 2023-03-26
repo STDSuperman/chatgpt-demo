@@ -74,7 +74,7 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
         <div class={`shrink-0 w-7 h-7 mt-4 rounded-full op-80 ${roleClass[role]}`} />
         {
             role === 'image' ? (
-                <img src={message} style="width: 200px;"/>
+                <img src={message} style="width: 350px;"/>
             ) : (
                 <div class="message prose break-words overflow-hidden" innerHTML={htmlString()} />
             )

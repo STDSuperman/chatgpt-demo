@@ -81,10 +81,10 @@ export default () => {
           content: currentSystemRoleSettings(),
         })
       }
-      requestMessageList.unshift({
-        content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
-        role: "system",
-      })
+    //   requestMessageList.unshift({
+    //     content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
+    //     role: "system",
+    //   })
       const timestamp = Date.now()
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -140,6 +140,9 @@ export default () => {
     try {
       const jsonRegex = /{.*}/s; // s flag for dot to match newline characters
       const _match = _message.match(jsonRegex);
+      const latestMessages = [
+        ...messageList()
+      ];
       if (_match) {
         const json = JSON.parse(_match[0]);
         if (
@@ -167,34 +170,32 @@ export default () => {
               role: "image",
               content: data,
             };
-            setMessageList([
-              ...messageList(),
-              message
-            ])
+            latestMessages.push(message)
+            setMessageList(latestMessages)
           } else {
-            throw new Error((await _response.json()).error);
+            const err = (await _response.json()).error;
+            alert(err);
+            throw new Error(err);
           }
         }
+      } else {
+        latestMessages.push({
+            role: 'assistant',
+            content: _message,
+        })
+        setMessageList(latestMessages)
       }
     } catch (e) {
-      console.log(currentAssistantMessage());
+      console.log(_message);
       console.log("taskDispatcher", e);
     }
   }
 
   const archiveCurrentMessage = async () => {
     if (currentAssistantMessage()) {
-      const latestMessages = [
-        ...messageList(),
-        {
-            role: 'assistant',
-            content: currentAssistantMessage(),
-        }
-      ];
       drawImageTaskDispatcher(currentAssistantMessage()).then(() => {
         setLoading(false)
         inputRef.focus()
-        setMessageList(latestMessages)
         setCurrentAssistantMessage('')
         setController(null)
       })
