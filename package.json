@@ -39,12 +39,8 @@
     "@unocss/preset-typography": "^0.50.3",
     "global-tunnel-ng": "^2.7.1",
     "punycode": "^2.3.0",
-<<<<<<< HEAD
-    "unocss": "^0.50.1"
-=======
     "unocss": "^0.50.1",
     "@evan-yang/eslint-config": "^1.0.1",
     "vite-plugin-pwa": "^0.14.1"
->>>>>>> origin/main
   }
 }
