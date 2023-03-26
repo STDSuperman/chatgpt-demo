@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
       {
-        name: "astro-app",
+        name: "ChatGPT",
         script: "npm",
         args: "start"
       }
