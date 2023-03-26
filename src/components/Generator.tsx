@@ -6,6 +6,8 @@ import MessageItem from './MessageItem'
 import SystemRoleSettings from './SystemRoleSettings'
 import ErrorMessageItem from './ErrorMessageItem'
 import type { ChatMessage, ErrorMessage } from '@/types'
+import { HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL } from '@/utils/constants';
+import { drawImage } from '@/utils/huggingface';
 
 export default () => {
   let inputRef: HTMLTextAreaElement
@@ -49,6 +51,11 @@ export default () => {
     if (window?.umami) umami.trackEvent('chat_generate')
     inputRef.value = ''
     setMessageList([
+      {
+        content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
+        id: 0,
+        role: "system",
+      },
       ...messageList(),
       {
         role: 'user',
@@ -125,10 +132,67 @@ export default () => {
       setController(null)
       return
     }
-    archiveCurrentMessage()
+    await archiveCurrentMessage()
   }
 
-  const archiveCurrentMessage = () => {
+  const drawImageTaskDispatcher = async () => {
+    try {
+      const _message = currentAssistantMessage();
+      const jsonRegex = /{.*}/s; // s flag for dot to match newline characters
+      const _match = _message.match(jsonRegex);
+      if (_match) {
+        const json = JSON.parse(_match[0]);
+        console.log('***json', json);
+        if (
+          "model" in json &&
+          "prompt" in json &&
+          "negative_prompt" in json &&
+          json.prompt.length
+        ) {
+          const _token = process.env.HG_API_TOKEN;
+          if (!_token) throw new Error("Access token not set.");
+          let _response = await drawImage(
+            _token,
+            json.model,
+            json.prompt,
+            json.negative_prompt
+          );
+          if (_response.status == 503) {
+            _response = await drawImage(
+              _token,
+              json.model,
+              json.prompt,
+              json.negative_prompt
+            );
+          }
+          if (_response.status == 200) {
+            const imgBlob = await _response.blob();
+            const data: string = await new Promise((resolve, _) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(imgBlob);
+            });
+            const message = {
+              role: "image",
+              content: data,
+            };
+            console.log('***message', message);
+            setMessageList([
+              ...messageList(),
+              message
+            ])
+          } else {
+            throw new Error((await _response.json()).error);
+          }
+        }
+      }
+    } catch (e) {
+      console.log(currentAssistantMessage());
+      console.log("taskDispatcher", e);
+    }
+  }
+
+  const archiveCurrentMessage = async () => {
     if (currentAssistantMessage()) {
       setMessageList([
         ...messageList(),
@@ -137,6 +201,7 @@ export default () => {
           content: currentAssistantMessage(),
         },
       ])
+      await drawImageTaskDispatcher();
       setCurrentAssistantMessage('')
       setLoading(false)
       setController(null)
