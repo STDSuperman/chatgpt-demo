@@ -1,5 +1,7 @@
 import { HUGGINGFACE_INFERENCE_URL } from "@/utils/constants";
 
+const hgToken = import.meta.env.HG_API_TOKEN;
+
 export async function drawImage(
   token: string,
   model: string,
@@ -28,4 +30,28 @@ export async function drawImage(
     },
     body: JSON.stringify(payload),
   });
+}
+
+
+export const post = async (context) => {
+    const body = await context.request.json()
+    const { model, prompt, negative_prompt } = body
+    const _token = hgToken;
+
+    if (!_token) throw new Error("Access token not set.");
+    let _response = await drawImage(
+        _token,
+        model,
+        prompt,
+        negative_prompt
+    );
+    if (_response.status == 503) {
+        _response = await drawImage(
+            _token,
+            model,
+            prompt,
+            negative_prompt
+        );
+    }
+    return _response;
 }

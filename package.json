@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev --host 0.0.0.0",
+    "dev": "astro dev --host 0.0.0.0",
+    "start": "npm run build && astro preview --host 0.0.0.0",
     "build": "astro build",
     "build:vercel": "OUTPUT=vercel astro build",
     "build:netlify": "OUTPUT=netlify astro build",

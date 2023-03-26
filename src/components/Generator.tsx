@@ -51,11 +51,9 @@ export default () => {
     if (window?.umami) umami.trackEvent('chat_generate')
     inputRef.value = ''
     setMessageList([
-      {
-        content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
-        role: "system",
-      },
-      ...messageList(),
+      ...(messageList()).filter(m => {
+          return m.role !== 'image'
+      }),
       {
         role: 'user',
         content: inputValue,
@@ -83,6 +81,10 @@ export default () => {
           content: currentSystemRoleSettings(),
         })
       }
+      requestMessageList.unshift({
+        content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
+        role: "system",
+      })
       const timestamp = Date.now()
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -134,37 +136,27 @@ export default () => {
     await archiveCurrentMessage()
   }
 
-  const drawImageTaskDispatcher = async () => {
+  const drawImageTaskDispatcher = async (_message: string): Promise<ChatMessage | undefined> => {
     try {
-      const _message = currentAssistantMessage();
       const jsonRegex = /{.*}/s; // s flag for dot to match newline characters
       const _match = _message.match(jsonRegex);
       if (_match) {
         const json = JSON.parse(_match[0]);
-        console.log('***json', json);
         if (
           "model" in json &&
           "prompt" in json &&
           "negative_prompt" in json &&
           json.prompt.length
         ) {
-          const _token = import.meta.env.HG_API_TOKEN;
-          if (!_token) throw new Error("Access token not set.");
-          let _response = await drawImage(
-            _token,
-            json.model,
-            json.prompt,
-            json.negative_prompt
-          );
-          if (_response.status == 503) {
-            _response = await drawImage(
-              _token,
-              json.model,
-              json.prompt,
-              json.negative_prompt
-            );
-          }
-          if (_response.status == 200) {
+          let _response = await fetch('/api/huggingface', {
+            method: 'POST',
+            body: JSON.stringify({
+                model: json.model,
+                prompt: json.prompt,
+                negative_prompt: json.negative_prompt
+            }),
+          })
+          if (_response.ok) {
             const imgBlob = await _response.blob();
             const data: string = await new Promise((resolve, _) => {
               const reader = new FileReader();
@@ -175,7 +167,6 @@ export default () => {
               role: "image",
               content: data,
             };
-            console.log('***message', message);
             setMessageList([
               ...messageList(),
               message
@@ -193,18 +184,20 @@ export default () => {
 
   const archiveCurrentMessage = async () => {
     if (currentAssistantMessage()) {
-      setMessageList([
+      const latestMessages = [
         ...messageList(),
         {
-          role: 'assistant',
-          content: currentAssistantMessage(),
-        },
-      ])
-      await drawImageTaskDispatcher();
-      setCurrentAssistantMessage('')
-      setLoading(false)
-      setController(null)
-      inputRef.focus()
+            role: 'assistant',
+            content: currentAssistantMessage(),
+        }
+      ];
+      drawImageTaskDispatcher(currentAssistantMessage()).then(() => {
+        setLoading(false)
+        inputRef.focus()
+        setMessageList(latestMessages)
+        setCurrentAssistantMessage('')
+        setController(null)
+      })
     }
   }
 
@@ -251,14 +244,15 @@ export default () => {
         setCurrentSystemRoleSettings={setCurrentSystemRoleSettings}
       />
       <Index each={messageList()}>
-        {(message, index) => (
-          <MessageItem
+        {(message, index) => {
+          if (message().role === 'system') return null
+          return (<MessageItem
             role={message().role}
             message={message().content}
             showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
             onRetry={retryLastFetch}
-          />
-        )}
+          />)
+        }}
       </Index>
       {currentAssistantMessage() && (
         <MessageItem
