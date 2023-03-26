@@ -53,7 +53,6 @@ export default () => {
     setMessageList([
       {
         content: `Whever I ask to draw an image, respond with the following JSON: {"model":"${HUGGINGFACE_DEFAULT_STABLE_DIFFUSION_MODEL}","prompt":string,"negative_prompt":string}, and fill in prompt with very detailed tags used in Stable Diffusion, and fill in negative prompt with common negative tags used in Stable Diffusion, and don't use any language other than English.`,
-        id: 0,
         role: "system",
       },
       ...messageList(),
@@ -149,7 +148,7 @@ export default () => {
           "negative_prompt" in json &&
           json.prompt.length
         ) {
-          const _token = process.env.HG_API_TOKEN;
+          const _token = import.meta.env.HG_API_TOKEN;
           if (!_token) throw new Error("Access token not set.");
           let _response = await drawImage(
             _token,
