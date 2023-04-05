@@ -144,8 +144,11 @@ export default () => {
         ...messageList()
       ];
       if (_match?.[0]) {
-        const json = JSON.parse(_match[0]);
+        let json = null;
+        try { json = JSON.parse(_match[0]); } catch {}
+
         if (
+          json &&
           "model" in json &&
           "prompt" in json &&
           "negative_prompt" in json &&
@@ -172,19 +175,19 @@ export default () => {
             };
             latestMessages.push(message)
             setMessageList(latestMessages)
+            return null;
           } else {
             const err = (await _response.json()).error;
             alert(err);
             throw new Error(err);
           }
         }
-      } else {
-        latestMessages.push({
-            role: 'assistant',
-            content: _message,
-        })
-        setMessageList(latestMessages)
       }
+      latestMessages.push({
+        role: 'assistant',
+        content: _message,
+      })
+      setMessageList(latestMessages)
     } catch (e) {
       console.log(_message);
       console.log("taskDispatcher", e);
